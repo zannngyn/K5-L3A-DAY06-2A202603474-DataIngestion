@@ -1,0 +1,44 @@
+{
+  "ran_at": "2026-11-13T10:04:22.843054+00:00",
+  "split": "test",
+  "questions": 5,
+  "top_k": 3,
+  "configs": {
+    "A": {
+      "index": "A",
+      "filter": false
+    },
+    "B": {
+      "index": "B",
+      "filter": false
+    },
+    "C": {
+      "index": "B",
+      "filter": true
+    }
+  },
+  "model": "qwen/qwen3-embedding-8b",
+  "dimensions": 4096,
+  "query_instruction": "Given a question about an introductory sociology textbook, retrieve passages that answer the question",
+  "chunk_counts": {
+    "A": 286,
+    "B": 217
+  },
+  "query_embed_seconds": 9.89,
+  "query_embed_usage": {
+    "requests": 5,
+    "prompt_tokens": 191,
+    "cost": 1.91e-06
+  },
+  "search_ms_per_query": {
+    "A": 29.6,
+    "B": 22.3,
+    "C": 14.5
+  },
+  "git": {
+    "commit": "42f64eb230289ff5042abc03683252649dfbef79",
+    "branch": "feat/ingestion-chunking",
+    "dirty": true
+  },
+  "dev_summary_existed_before": true
+}

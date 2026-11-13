@@ -1,0 +1,280 @@
+{
+  "source_id": "openstax-intro-sociology-3e",
+  "split_rule": "Fixed before any retrieval run: 15 dev / 5 test. Test questions are spread over both chapters and include 2 filter questions.",
+  "filter_rule": "filter.chapter is supplied by the user context before retrieval (e.g. 'I am studying Chapter 2'). Used only by config C; A/B ignore it.",
+  "gold_page_unit": "1-based physical PDF page index",
+  "questions": [
+    {
+      "id": "q01",
+      "split": "dev",
+      "type": "direct",
+      "question": "What do sociologists call a group of people who live in a defined geographic area, interact with one another, and share a common culture?",
+      "expected_answer": "A society.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        20
+      ],
+      "evidence_quote": "A group of people who live in a defined geographic area, who interact with one another, and who share a common culture is what sociologists call a society.",
+      "filter": null
+    },
+    {
+      "id": "q02",
+      "split": "dev",
+      "type": "paraphrase",
+      "question": "What is the name for the mistake of treating an abstract idea such as culture as if it physically existed?",
+      "expected_answer": "Reification.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        21
+      ],
+      "evidence_quote": "The error of treating an abstract concept as though it has a real, material existence is known as reification",
+      "filter": null
+    },
+    {
+      "id": "q03",
+      "split": "dev",
+      "type": "direct",
+      "question": "What term did Norbert Elias use for analyzing individuals and the society that shapes their behavior at the same time?",
+      "expected_answer": "Figuration.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        22
+      ],
+      "evidence_quote": "German sociologist Norbert Elias called the process of simultaneously analyzing the behavior of individuals and the society that shapes that behavior figuration.",
+      "filter": null
+    },
+    {
+      "id": "q04",
+      "split": "dev",
+      "type": "condition_exception",
+      "question": "Who first coined the term sociology, and was it Auguste Comte?",
+      "expected_answer": "Emmanuel-Joseph Sieyès coined it in 1780 in an unpublished manuscript; Comte only reintroduced the term in 1838.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        24
+      ],
+      "evidence_quote": "The term sociology was first coined in 1780 by the French essayist Emmanuel-Joseph Sieyès (1748–1836) in an unpublished manuscript (Fauré et al. 1999). In 1838, the term was reintroduced by Auguste Comte",
+      "filter": null
+    },
+    {
+      "id": "q05",
+      "split": "dev",
+      "type": "direct",
+      "question": "What was the first book to have the word sociology in its title, and who wrote it?",
+      "expected_answer": "The Study of Sociology, published by Herbert Spencer in 1873.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        25
+      ],
+      "evidence_quote": "In 1873, the English philosopher Herbert Spencer published The Study of Sociology, the first book with the term “sociology” in the title.",
+      "filter": null
+    },
+    {
+      "id": "q06",
+      "split": "dev",
+      "type": "direct",
+      "question": "Where and when did Émile Durkheim establish the first European department of sociology?",
+      "expected_answer": "At the University of Bordeaux in 1895.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        26
+      ],
+      "evidence_quote": "establishing the first European department of sociology at the University of Bordeaux in 1895",
+      "filter": null
+    },
+    {
+      "id": "q07",
+      "split": "dev",
+      "type": "paraphrase",
+      "question": "Which sociologist said people judge themselves by how others react to them, and what did he call this idea?",
+      "expected_answer": "Charles Horton Cooley; the looking-glass self.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        28
+      ],
+      "evidence_quote": "Calling this idea ‘the looking-glass self,’ Cooley argued that we ‘see’ ourselves by the reactions of others with whom we interact.",
+      "filter": null
+    },
+    {
+      "id": "q08",
+      "split": "dev",
+      "type": "direct",
+      "question": "According to Robert Merton, what is the difference between manifest and latent functions?",
+      "expected_answer": "Manifest functions are sought or anticipated consequences of a social process; latent functions are unsought consequences.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        30
+      ],
+      "evidence_quote": "Manifest functions are the consequences of a social process that are sought or anticipated, while latent functions are the unsought consequences of a social process.",
+      "filter": null
+    },
+    {
+      "id": "q09",
+      "split": "dev",
+      "type": "paraphrase",
+      "question": "Which technique used theater as an analogy for social interaction, and who developed it?",
+      "expected_answer": "Dramaturgical analysis, developed by Erving Goffman.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        34
+      ],
+      "evidence_quote": "Erving Goffman (1922-1982) to develop a technique called dramaturgical analysis. Goffman used theater as an analogy for social interaction",
+      "filter": null
+    },
+    {
+      "id": "q10",
+      "split": "dev",
+      "type": "direct",
+      "question": "In the hypothesis 'if unemployment increases, then the crime rate will increase', which is the independent variable and which is the dependent variable?",
+      "expected_answer": "Unemployment is the independent variable; the crime rate is the dependent variable.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        50
+      ],
+      "evidence_quote": "unemployment is the independent variable and the crime rate is the dependent variable.",
+      "filter": null
+    },
+    {
+      "id": "q11",
+      "split": "dev",
+      "type": "paraphrase",
+      "question": "Which research quality describes how well a study measures what it was designed to measure?",
+      "expected_answer": "Validity.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        51
+      ],
+      "evidence_quote": "Researchers also strive for validity, which refers to how well the study measures what it was designed to measure.",
+      "filter": null
+    },
+    {
+      "id": "q12",
+      "split": "dev",
+      "type": "direct",
+      "question": "What defines a random sample?",
+      "expected_answer": "Every person in the population has the same chance of being chosen for the study.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        54
+      ],
+      "evidence_quote": "In a random sample, every person in a population has the same chance of being chosen for the study.",
+      "filter": null
+    },
+    {
+      "id": "q13",
+      "split": "dev",
+      "type": "condition_exception",
+      "question": "Why is the Hawthorne effect unavoidable in some research studies?",
+      "expected_answer": "Because sociologists have to make the purpose of the study known, so subjects know they are being observed.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        63
+      ],
+      "evidence_quote": "The Hawthorne effect is unavoidable in some research studies because sociologists have to make the purpose of the study known.",
+      "filter": null
+    },
+    {
+      "id": "q14",
+      "split": "dev",
+      "type": "metadata_filter",
+      "question": "What did the Frankfurt School develop as an elaboration on Marxist principles?",
+      "expected_answer": "Critical theory.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        32
+      ],
+      "evidence_quote": "In the 1930s and 1940s, German philosophers, known as the Frankfurt School, developed critical theory as an elaboration on Marxist principles.",
+      "filter": {
+        "chapter": 1
+      },
+      "filter_note": "The Frankfurt School also appears in Chapter 2 (p.52, critical sociology); the filter separates the two."
+    },
+    {
+      "id": "q15",
+      "split": "dev",
+      "type": "metadata_filter",
+      "question": "What ethical concern did Max Weber identify for sociological research?",
+      "expected_answer": "Personal values must not shape interpretation of results; sociologists must establish value neutrality.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        65
+      ],
+      "evidence_quote": "Sociologists, he stated, must establish value neutrality, a practice of remaining impartial, without bias or judgment, during the course of a study and in publishing results",
+      "filter": {
+        "chapter": 2
+      },
+      "filter_note": "Weber also appears in Chapter 1 (p.26 verstehen, p.32 conflict theory)."
+    },
+    {
+      "id": "t01",
+      "split": "test",
+      "type": "condition_exception",
+      "question": "Case studies are rarely a primary method, but in what situation are they especially useful?",
+      "expected_answer": "When the single case is unique, e.g. a feral child.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        62
+      ],
+      "evidence_quote": "However, case studies are useful when the single case is unique.",
+      "filter": null
+    },
+    {
+      "id": "t02",
+      "split": "test",
+      "type": "paraphrase",
+      "question": "In the bumper sticker experiment on police treatment of drivers, how many citations did the drivers get and over how many days?",
+      "expected_answer": "Thirty-three citations in seventeen days.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        64
+      ],
+      "evidence_quote": "After seventeen days, the fifteen drivers had collected a total of thirty-three traffic citations.",
+      "filter": null
+    },
+    {
+      "id": "t03",
+      "split": "test",
+      "type": "direct",
+      "question": "Whose research did the Supreme Court cite in Brown vs. the Board of Education?",
+      "expected_answer": "Kenneth and Mamie Clark.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        35
+      ],
+      "evidence_quote": "the Supreme Court cited the research of the husband-and-wife team of social scientists, Kenneth and Mamie Clark",
+      "filter": null
+    },
+    {
+      "id": "t04",
+      "split": "test",
+      "type": "metadata_filter",
+      "question": "Which study investigated whether people can get by on minimum-wage work?",
+      "expected_answer": "Barbara Ehrenreich's participant observation for her book Nickel and Dimed.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        59
+      ],
+      "evidence_quote": "This type of research is what journalist Barbara Ehrenreich conducted for her book Nickel and Dimed.",
+      "filter": {
+        "chapter": 2
+      },
+      "filter_note": "Minimum wage also appears in Chapter 1 (p.27, public sociology debate)."
+    },
+    {
+      "id": "t05",
+      "split": "test",
+      "type": "metadata_filter",
+      "question": "How does qualitative sociology seek to understand human behavior?",
+      "expected_answer": "Through in-depth interviews, focus groups, and analysis of content sources.",
+      "gold_source_id": "openstax-intro-sociology-3e",
+      "gold_page": [
+        26
+      ],
+      "evidence_quote": "Qualitative sociology seeks to understand human behavior by learning about it through in-depth interviews, focus groups, and analysis of content sources",
+      "filter": {
+        "chapter": 1
+      },
+      "filter_note": "Qualitative data is also discussed in Chapter 2 (p.54, p.59)."
+    }
+  ]
+}

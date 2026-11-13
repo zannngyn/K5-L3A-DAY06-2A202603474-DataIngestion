@@ -1,0 +1,1792 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 06 · Data Ingestion — Demo</title>
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%230d5961%27/%3E%3Cpath d=%27M9 22V10h6a4 4 0 010 8H9%27 fill=%27none%27 stroke=%27%23fffdf8%27 stroke-width=%273%27/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f6f3ec;
+      --paper-2: #eee9dd;
+      --sheet: #fffdf8;
+      --ink: #1b1d22;
+      --ink-2: #474c56;
+      --ink-3: #6a6f78;
+      --rule: #d8d1c1;
+      --rule-strong: #b9b09c;
+      --accent: #0d5961;
+      --accent-soft: #d6e8e6;
+      --cfg-a: #9c4417;
+      --cfg-b: #2f4196;
+      --cfg-c: #0d5961;
+      --ok: #1d6638;
+      --ok-soft: #dcefe1;
+      --bad: #a1202a;
+      --bad-soft: #f6dcdc;
+      --warn: #7f5200;
+      --warn-soft: #f7e8c6;
+      --mark: #ffe08a;
+      --mark-partial: #f3d2b4;
+      --serif: "Iowan Old Style", "Charter", "Palatino Linotype", Palatino, Georgia, serif;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+    }
+
+    body {
+      background: #2b2d31;
+      color: var(--ink);
+      font-family: var(--sans);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection {
+      background: var(--mark);
+      color: var(--ink);
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Stage: fixed 1600x900 canvas scaled to the viewport */
+    .viewport {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .stage {
+      width: 1600px;
+      height: 900px;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(var(--k, 1));
+      transform-origin: center;
+      background: var(--paper);
+      position: relative;
+      box-shadow: 0 30px 80px -20px rgb(0 0 0 / .5);
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 64px 88px 96px;
+      display: none;
+      flex-direction: column;
+    }
+
+    .slide.is-active {
+      display: flex;
+      animation: enter .55s var(--ease) both;
+    }
+
+    @keyframes enter {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+        filter: blur(3px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+        filter: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .slide.is-active {
+        animation: none;
+      }
+    }
+
+    .chrome {
+      position: absolute;
+      left: 88px;
+      right: 88px;
+      bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: .9375rem;
+      color: var(--ink-3);
+      z-index: 5;
+    }
+
+    .chrome .credit {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chrome .credit a {
+      color: inherit;
+    }
+
+    .progress {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 5px;
+      background: var(--accent);
+      transform-origin: left;
+      transition: transform .5s var(--ease);
+      z-index: 5;
+    }
+
+    .navbtn {
+      display: inline-grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--rule-strong);
+      border-radius: 999px;
+      background: var(--sheet);
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .navbtn:hover {
+      background: var(--paper-2);
+    }
+
+    .navbtn:disabled {
+      opacity: .35;
+      cursor: default;
+    }
+
+    .navbtn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .counter {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      color: var(--ink-2);
+      min-width: 4.5em;
+      text-align: center;
+    }
+
+    /* Type */
+    h1,
+    h2,
+    h3 {
+      font-family: var(--serif);
+      font-weight: 600;
+      letter-spacing: -.01em;
+      margin: 0;
+      text-wrap: balance;
+    }
+
+    h2 {
+      font-size: 3.25rem;
+      line-height: 1.05;
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      font-size: 1.625rem;
+      line-height: 1.2;
+    }
+
+    .lede {
+      font-size: 1.5rem;
+      line-height: 1.45;
+      color: var(--ink-2);
+      max-width: 62ch;
+      margin: 0 0 28px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .num {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted {
+      color: var(--ink-3);
+    }
+
+    .small {
+      font-size: 1rem;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: .9em;
+      background: var(--paper-2);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* Title slide */
+    .title-slide {
+      justify-content: flex-end;
+      padding-bottom: 150px;
+      background:
+        linear-gradient(var(--paper), var(--paper)) padding-box;
+    }
+
+    .title-slide .ruled {
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(to bottom, transparent 0 47px, rgb(13 89 97 / .08) 47px 48px);
+      pointer-events: none;
+    }
+
+    .title-slide .margin {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 64px;
+      width: 2px;
+      background: rgb(161 32 42 / .25);
+    }
+
+    .title-slide h1 {
+      font-size: 6rem;
+      line-height: .98;
+      letter-spacing: -.03em;
+      max-width: 14ch;
+    }
+
+    .title-slide .sub {
+      font-size: 1.75rem;
+      color: var(--ink-2);
+      margin-top: 28px;
+      max-width: 48ch;
+      line-height: 1.4;
+    }
+
+    .title-slide .who {
+      margin-top: 44px;
+      display: flex;
+      gap: 40px;
+      font-size: 1.25rem;
+      color: var(--ink-2);
+    }
+
+    .title-slide .who b {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .hint {
+      position: absolute;
+      right: 88px;
+      top: 64px;
+      font-size: 1rem;
+      color: var(--ink-3);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    kbd {
+      font-family: var(--mono);
+      font-size: .85em;
+      border: 1px solid var(--rule-strong);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      padding: 1px 7px;
+      background: var(--sheet);
+      color: var(--ink);
+    }
+
+    /* Generic layout helpers */
+    .row {
+      display: flex;
+      gap: 48px;
+    }
+
+    .grow {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stack>*+* {
+      margin-top: 14px;
+    }
+
+    .rule-top {
+      border-top: 1px solid var(--rule);
+      padding-top: 18px;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 10px 28px;
+      font-size: 1.25rem;
+      line-height: 1.4;
+    }
+
+    .facts dt {
+      color: var(--ink-3);
+    }
+
+    .facts dd {
+      margin: 0;
+    }
+
+    .bignum {
+      font-family: var(--serif);
+      font-size: 4.5rem;
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+
+    /* Page strip */
+    .strip {
+      display: grid;
+      grid-template-columns: repeat(80, 1fr);
+      gap: 3px;
+      margin: 8px 0 14px;
+    }
+
+    .strip i {
+      height: 66px;
+      border-radius: 2px;
+      background: var(--paper-2);
+      border: 1px solid var(--rule);
+    }
+
+    .strip i.c1 {
+      background: var(--cfg-b);
+      border-color: var(--cfg-b);
+    }
+
+    .strip i.c2 {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .strip i.end {
+      background: repeating-linear-gradient(135deg, var(--rule) 0 3px, var(--paper-2) 3px 7px);
+    }
+
+    .strip-axis {
+      display: grid;
+      grid-template-columns: repeat(80, 1fr);
+      gap: 3px;
+      font-family: var(--mono);
+      font-size: .8125rem;
+      color: var(--ink-3);
+    }
+
+    .strip-axis span {
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .legend {
+      display: flex;
+      gap: 28px;
+      font-size: 1.0625rem;
+      color: var(--ink-2);
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .legend span {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .legend i {
+      width: 18px;
+      height: 18px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* Pipeline */
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0;
+      margin-top: 18px;
+      position: relative;
+    }
+
+    .flow li {
+      list-style: none;
+      padding: 26px 22px 24px;
+      border-top: 3px solid var(--ink);
+      position: relative;
+    }
+
+    .flow li+li {
+      border-left: 1px solid var(--rule);
+    }
+
+    .flow .step {
+      font-family: var(--serif);
+      font-size: 1.625rem;
+      font-weight: 600;
+    }
+
+    .flow .val {
+      font-family: var(--serif);
+      font-size: 2.75rem;
+      line-height: 1;
+      margin: 22px 0 8px;
+      letter-spacing: -.02em;
+    }
+
+    .flow .unit {
+      color: var(--ink-2);
+      font-size: 1.0625rem;
+      line-height: 1.4;
+    }
+
+    .flow .tool {
+      margin-top: 18px;
+      font-size: .9375rem;
+      color: var(--ink-3);
+      line-height: 1.45;
+    }
+
+    .flow ol {
+      margin: 0;
+      padding: 0;
+      display: contents;
+    }
+
+    /* Before / after text panes */
+    .pane {
+      background: var(--sheet);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 22px 26px;
+      overflow: auto;
+    }
+
+    .pane h3 {
+      font-size: 1.25rem;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .pane h3 .muted {
+      font-family: var(--sans);
+      font-weight: 400;
+      font-size: 1rem;
+    }
+
+    .rawlines {
+      font-family: var(--mono);
+      font-size: .96rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      margin: 0;
+    }
+
+    .rawlines .drop {
+      color: var(--bad);
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      background: var(--bad-soft);
+    }
+
+    .rawlines .join {
+      background: var(--warn-soft);
+    }
+
+    .prose {
+      font-family: var(--serif);
+      font-size: 1.1875rem;
+      line-height: 1.6;
+    }
+
+    .prose p+p {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--rule);
+    }
+
+    .ops {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      font-size: 1.0625rem;
+    }
+
+    .ops span {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--sheet);
+      border: 1px solid var(--rule);
+    }
+
+    /* Config identity */
+    .cfg {
+      display: inline-grid;
+      place-items: center;
+      width: 1.9em;
+      height: 1.9em;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--serif);
+      font-weight: 700;
+      font-size: 1em;
+      flex: none;
+    }
+
+    .cfgname {
+      display: inline-flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .cfg.A {
+      background: var(--cfg-a);
+    }
+
+    .cfg.B {
+      background: var(--cfg-b);
+    }
+
+    .cfg.C {
+      background: var(--cfg-c);
+    }
+
+    /* Chunk comparison */
+    .chunk {
+      font-family: var(--serif);
+      font-size: 1.1875rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .cut {
+      color: var(--bad);
+      font-family: var(--mono);
+      font-weight: 700;
+      padding: 0 3px;
+      background: var(--bad-soft);
+      border-radius: 3px;
+    }
+
+    /* Tables */
+    table.data {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 1.1875rem;
+    }
+
+    table.data th,
+    table.data td {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--rule);
+      vertical-align: top;
+    }
+
+    table.data th {
+      font-weight: 600;
+      color: var(--ink-2);
+      font-size: 1rem;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    table.data td.n,
+    table.data th.n {
+      text-align: right;
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    table.data tr.chosen td {
+      background: var(--accent-soft);
+    }
+
+    .tag {
+      font-family: var(--sans);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .875rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .tag.ok {
+      background: var(--ok-soft);
+      color: var(--ok);
+    }
+
+    .tag.bad {
+      background: var(--bad-soft);
+      color: var(--bad);
+    }
+
+    .tag.warn {
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+
+    .tag.neutral {
+      background: var(--paper-2);
+      color: var(--ink-2);
+    }
+
+    .tag svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Bars */
+    .bars {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 36px 64px;
+    }
+
+    .metric h3 {
+      font-size: 1.375rem;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .metric h3 .muted {
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 400;
+    }
+
+    .bar {
+      display: grid;
+      grid-template-columns: 44px 1fr 92px;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .bar .track {
+      height: 30px;
+      background: var(--paper-2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .bar .fill {
+      height: 100%;
+      border-radius: 4px 0 0 4px;
+      transform-origin: left;
+      animation: grow .9s var(--ease) both;
+    }
+
+    .bar .fill.A {
+      background: var(--cfg-a);
+    }
+
+    .bar .fill.B {
+      background: var(--cfg-b);
+    }
+
+    .bar .fill.C {
+      background: var(--cfg-c);
+    }
+
+    .bar .v {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.125rem;
+      text-align: right;
+    }
+
+    @keyframes grow {
+      from {
+        transform: scaleX(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bar .fill {
+        animation: none;
+      }
+    }
+
+    .callout {
+      font-size: 1.1875rem;
+      line-height: 1.5;
+      color: var(--ink-2);
+      padding: 16px 20px;
+      background: var(--sheet);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+    }
+
+    .callout b {
+      color: var(--ink);
+    }
+
+    /* Failure list */
+    .fails {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 56px;
+    }
+
+    .fail {
+      padding: 22px 0;
+      border-top: 1px solid var(--rule);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 18px;
+    }
+
+    .fail .id {
+      font-family: var(--mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      grid-row: span 3;
+    }
+
+    .fail h3 {
+      font-size: 1.375rem;
+    }
+
+    .fail p {
+      color: var(--ink-2);
+      font-size: 1.125rem;
+      line-height: 1.5;
+    }
+
+    .linkbtn {
+      justify-self: start;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: none;
+      border: 0;
+      padding: 6px 0;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .linkbtn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Explorer */
+    .ex-head {
+      display: flex;
+      align-items: flex-end;
+      gap: 28px;
+      margin-bottom: 14px;
+    }
+
+    .ex-head h2 {
+      font-size: 2.5rem;
+      margin: 0;
+    }
+
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--rule-strong);
+      border-radius: 999px;
+      padding: 3px;
+      background: var(--sheet);
+    }
+
+    .seg button {
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      border: 0;
+      background: none;
+      padding: 6px 16px;
+      border-radius: 999px;
+      color: var(--ink-2);
+      cursor: pointer;
+    }
+
+    .seg button[aria-pressed="true"] {
+      background: var(--ink);
+      color: var(--sheet);
+    }
+
+    .chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chips button {
+      font-family: var(--mono);
+      font-size: .9375rem;
+      border: 1px solid var(--rule-strong);
+      background: var(--sheet);
+      color: var(--ink);
+      padding: 5px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .chips button:hover {
+      background: var(--paper-2);
+    }
+
+    .chips button[aria-pressed="true"] {
+      background: var(--ink);
+      color: var(--sheet);
+      border-color: var(--ink);
+    }
+
+    .chips .dots {
+      display: inline-flex;
+      gap: 2px;
+    }
+
+    .chips .dots i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--rule-strong);
+    }
+
+    .chips .dots i.h1 {
+      background: var(--ok);
+    }
+
+    .chips .dots i.h3 {
+      background: #8fbf9f;
+    }
+
+    .chips .dots i.miss {
+      background: var(--bad);
+    }
+
+    .chips button[aria-pressed="true"] .dots i {
+      outline: 1px solid var(--sheet);
+    }
+
+    .qbox {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 28px;
+      padding: 16px 20px;
+      background: var(--sheet);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+
+    .qbox .q {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      line-height: 1.3;
+    }
+
+    .qbox .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin-top: 10px;
+      font-size: 1rem;
+      color: var(--ink-2);
+    }
+
+    .qbox .ev {
+      font-family: var(--serif);
+      font-size: 1.0625rem;
+      line-height: 1.5;
+      color: var(--ink-2);
+    }
+
+    .qbox .ev mark {
+      background: var(--mark);
+      color: var(--ink);
+      padding: 0 2px;
+    }
+
+    .cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .col {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      background: var(--sheet);
+    }
+
+    .col-h {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--rule);
+      flex-wrap: wrap;
+    }
+
+    .col-h .name {
+      font-weight: 600;
+      font-size: 1.0625rem;
+      margin-right: auto;
+    }
+
+    .col-b {
+      overflow: auto;
+      padding: 4px 14px 14px;
+      flex: 1;
+      scrollbar-width: thin;
+      scrollbar-color: var(--rule-strong) transparent;
+    }
+
+    .hit {
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--rule);
+    }
+
+    .hit:last-child {
+      border-bottom: 0;
+    }
+
+    .hit-h {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: .9375rem;
+      color: var(--ink-2);
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .hit-h .rank {
+      font-family: var(--serif);
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--ink);
+    }
+
+    .hit-t {
+      font-family: var(--serif);
+      font-size: 1rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .hit-t mark {
+      background: var(--mark);
+      color: var(--ink);
+      border-radius: 2px;
+    }
+
+    .hit-t mark.partial {
+      background: var(--mark-partial);
+    }
+
+    .ex-foot {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-top: 12px;
+      font-size: 1rem;
+      color: var(--ink-3);
+    }
+
+    .btn {
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--sheet);
+      cursor: pointer;
+    }
+
+    .btn.ghost {
+      background: var(--sheet);
+      color: var(--ink);
+      border-color: var(--rule-strong);
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Raw CSV panel (in-slide sheet, not a modal) */
+    .sheet {
+      position: absolute;
+      left: 88px;
+      right: 88px;
+      bottom: 84px;
+      top: 150px;
+      background: var(--sheet);
+      border: 1px solid var(--rule-strong);
+      border-radius: 12px;
+      box-shadow: 0 24px 60px -18px rgb(27 29 34 / .35);
+      display: none;
+      flex-direction: column;
+      z-index: 4;
+    }
+
+    .sheet.is-open {
+      display: flex;
+      animation: enter .4s var(--ease) both;
+    }
+
+    .sheet-h {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .sheet-h h3 {
+      font-size: 1.375rem;
+      margin-right: auto;
+    }
+
+    .sheet-b {
+      overflow: auto;
+      padding: 8px 22px 22px;
+    }
+
+    .sheet-b h4 {
+      font-family: var(--mono);
+      font-size: 1rem;
+      margin: 18px 0 8px;
+      color: var(--ink-2);
+      font-weight: 600;
+    }
+
+    table.csv {
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: .875rem;
+      min-width: 100%;
+    }
+
+    table.csv th,
+    table.csv td {
+      border: 1px solid var(--rule);
+      padding: 6px 10px;
+      text-align: left;
+      vertical-align: top;
+      max-width: 440px;
+    }
+
+    table.csv th {
+      background: var(--paper-2);
+      position: sticky;
+      top: 0;
+      font-weight: 600;
+    }
+
+    table.csv td.long {
+      white-space: pre-wrap;
+      font-family: var(--serif);
+      font-size: .9375rem;
+      min-width: 320px;
+    }
+
+    .empty {
+      padding: 28px;
+      text-align: center;
+      color: var(--ink-2);
+      font-size: 1.125rem;
+      border: 1px dashed var(--rule-strong);
+      border-radius: 10px;
+    }
+
+    /* Coherence explorer */
+    .coh {
+      display: grid;
+      grid-template-columns: 210px 1fr 1fr;
+      gap: 20px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .poslist {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: auto;
+    }
+
+    .poslist button {
+      font: inherit;
+      text-align: left;
+      border: 1px solid var(--rule);
+      background: var(--sheet);
+      border-radius: 8px;
+      padding: 9px 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 1rem;
+    }
+
+    .poslist button[aria-pressed="true"] {
+      border-color: var(--ink);
+      box-shadow: inset 3px 0 0 var(--ink);
+    }
+
+    .poslist .scores {
+      font-family: var(--mono);
+      color: var(--ink-2);
+    }
+
+    .score {
+      font-family: var(--serif);
+      font-size: 2.25rem;
+      line-height: 1;
+    }
+
+    .reason {
+      font-size: 1.0625rem;
+      line-height: 1.5;
+      color: var(--ink-2);
+      padding: 12px 14px;
+      border-top: 1px solid var(--rule);
+    }
+
+    /* Conclusion */
+    .concl {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 64px;
+    }
+
+    .concl ul {
+      margin: 0;
+      padding-left: 1.1em;
+      font-size: 1.3125rem;
+      line-height: 1.5;
+    }
+
+    .concl li+li {
+      margin-top: 12px;
+    }
+
+    .concl li::marker {
+      color: var(--accent);
+    }
+
+    .verdict {
+      font-family: var(--serif);
+      font-size: 2.25rem;
+      line-height: 1.2;
+      margin-bottom: 26px;
+    }
+
+    .verdict .cfg {
+      font-size: .9em;
+      vertical-align: -.1em;
+      margin-right: 8px;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        overflow: visible;
+      }
+
+      .viewport {
+        position: static;
+        display: block;
+      }
+
+      .stage {
+        transform: none !important;
+        position: static;
+        box-shadow: none;
+        height: auto;
+        overflow: visible;
+      }
+
+      .slide {
+        display: flex !important;
+        position: relative;
+        height: 900px;
+        page-break-after: always;
+        animation: none !important;
+      }
+
+      .chrome,
+      .progress,
+      .sheet {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="sr-only" href="#stage">Bỏ qua tới nội dung</a>
+  <div class="viewport">
+    <main class="stage" id="stage" tabindex="-1" aria-roledescription="slideshow" aria-label="Demo bài lab Day 06">
+      <div id="slides"></div>
+      <div class="sheet" id="sheet" role="region" aria-labelledby="sheet-title" hidden></div>
+      <footer class="chrome">
+        <span class="credit" id="credit"></span>
+        <button class="navbtn" id="prev" type="button" aria-label="Slide trước"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg></button>
+        <span class="counter" id="counter" aria-hidden="true"></span>
+        <button class="navbtn" id="next" type="button" aria-label="Slide sau"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" />
+          </svg></button>
+        <button class="navbtn" id="fs" type="button" aria-label="Toàn màn hình (F)"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </svg></button>
+      </footer>
+      <div class="progress" id="progress"></div>
+      <p class="sr-only" id="live" aria-live="polite"></p>
+    </main>
+  </div>
+
+  <script type="application/json" id="lab-data">/*__LAB_DATA__*/</script>
+  <script>
+    "use strict";
+    const D = JSON.parse(document.getElementById("lab-data").textContent);
+
+    /* ---------- helpers ---------- */
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const fmtInt = (n) => Number(n).toLocaleString("vi-VN");
+    const fmtDec = (n, d = 1) => Number(n).toLocaleString("vi-VN", { minimumFractionDigits: d, maximumFractionDigits: d });
+    const CONFIGS = ["A", "B", "C"];
+    const CFG_NAME = { A: "Cắt cố định 500", B: "Theo đoạn ≤ 800", C: "B + lọc chương" };
+    const ICON = {
+      ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+      bad: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+      part: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>',
+      go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+      table: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 10h17M9.5 10v9.5"/></svg>',
+      close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    };
+    const tag = (kind, text, icon) => `<span class="tag ${kind}">${icon ? ICON[icon] : ""}${esc(text)}</span>`;
+    const ratio = (r) => (r === "N/A" ? "N/A" : `${r.n}/${r.N}`);
+    const cfgBadge = (c) => `<span class="cfg ${c}" aria-hidden="true">${c}</span>`;
+    const csvRows = (name) => {
+      const { header, rows } = D.audits[name];
+      return rows.map((r) => Object.fromEntries(header.map((h, i) => [h, r[i]])));
+    };
+
+    /* Evidence highlighting: whitespace-insensitive match of the quote inside chunk text. */
+    const wsPattern = (s) => s.trim().split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s+");
+    function highlight(text, quote, edge = 30) {
+      const tryMark = (q, cls) => {
+        const m = new RegExp(wsPattern(q)).exec(text);
+        return m ? { start: m.index, end: m.index + m[0].length, cls } : null;
+      };
+      const norm = quote.replace(/\s+/g, " ").trim();
+      const hit = tryMark(norm, "") || tryMark(norm.slice(0, edge), "partial") || tryMark(norm.slice(-edge), "partial");
+      if (!hit) return esc(text);
+      return esc(text.slice(0, hit.start)) + `<mark class="${hit.cls}">` + esc(text.slice(hit.start, hit.end)) + "</mark>" + esc(text.slice(hit.end));
+    }
+
+    /* ---------- derived numbers (never typed by hand) ---------- */
+    const S = D.source;
+    const LOG = D.ingestion;
+    const RUN1 = D.index_runs[0];
+    const RUN2 = D.index_runs[D.index_runs.length - 1];
+    const tokensTotal = RUN1.total_usage.prompt_tokens;
+    const costTotal = RUN1.total_usage.cost;
+    const chapters = S.selected_scope;
+    const chapterOf = (p) => (chapters.find((c) => c.pdf_pages.includes(p)) || {}).chapter;
+    const Q = Object.fromEntries(D.questions.map((q) => [q.id, q]));
+    const TRACE = {};
+    for (const split of ["dev", "test"]) for (const t of D.traces[split]) (TRACE[t.id] ??= {})[t.config] = t;
+    const chosen = "C";
+    const TYPE_VI = { direct: "Trực tiếp", paraphrase: "Diễn đạt lại", condition_exception: "Điều kiện / ngoại lệ", metadata_filter: "Cần lọc metadata" };
+
+    /* ---------- slides ---------- */
+    const slides = [];
+
+    slides.push({
+      title: "Mở đầu", cls: "title-slide", html: () => {
+        const st = D.student;
+        const who = [st.name && `<span><b>${esc(st.name)}</b></span>`, st.id && `<span>MSSV <b class="num">${esc(st.id)}</b></span>`, st.class && `<span>Lớp <b>${esc(st.class)}</b></span>`].filter(Boolean).join("");
+        return `<div class="ruled" aria-hidden="true"></div><div class="margin" aria-hidden="true"></div>
+  <p class="hint"><kbd>←</kbd><kbd>→</kbd> chuyển slide · <kbd>F</kbd> toàn màn hình</p>
+  <h1>Biến một cuốn sách thành kho tri thức truy xuất được</h1>
+  <p class="sub">Day 06 · Data Ingestion Engineering — so sánh ba cách chuẩn bị dữ liệu trên <i>${esc(S.title)}</i>, đo bằng ${D.questions.length} câu hỏi có bằng chứng.</p>
+  <div class="who">${who || '<span class="muted">Điền họ tên, MSSV vào STUDENT.md rồi build lại</span>'}</div>`;
+      }
+    });
+
+    slides.push({
+      title: "Corpus", html: () => {
+        const cells = [];
+        const sets = Object.fromEntries(chapters.map((c) => [c.chapter, new Set(c.pdf_pages)]));
+        const ends = new Set();
+        for (const ex of S.excluded_pages) {
+          if (!/end matter/.test(ex.reason)) continue;
+          const [a, b] = String(ex.pdf_pages).split("-").map(Number);
+          for (let p = a; p <= b; p++) ends.add(p);
+        }
+        for (let p = 1; p <= 80; p++) {
+          const cls = sets[1]?.has(p) ? "c1" : sets[2]?.has(p) ? "c2" : ends.has(p) ? "end" : "";
+          cells.push(`<i class="${cls}" title="Trang ${p}"></i>`);
+        }
+        const axis = Array.from({ length: 80 }, (_, i) => `<span>${(i + 1) % 10 === 1 ? i + 1 : ""}</span>`).join("");
+        const ch = chapters.map((c) => `<dt>Chương ${c.chapter}</dt><dd>${esc(c.title)} — trang <span class="num">${c.pdf_pages[0]}–${c.pdf_pages[c.pdf_pages.length - 1]}</span> (${c.page_count} trang)</dd>`).join("");
+        return `<h2>Corpus: ${S.counted_content_pages} trang nội dung, có quyền sử dụng</h2>
+  <p class="lede">Hai chương đầu của sách giáo khoa mở OpenStax. Chọn sách vì có cấu trúc chương/mục rõ ràng và nhiều khái niệm lặp lại giữa hai chương — đủ để thử bộ lọc metadata.</p>
+  <div class="strip" role="img" aria-label="80 trang PDF đầu tiên: trang ${chapters.map((c) => c.pdf_pages[0] + "–" + c.pdf_pages.at(-1)).join(" và ")} được dùng">${cells.join("")}</div>
+  <div class="strip-axis" aria-hidden="true">${axis}</div>
+  <div class="legend">
+    <span><i style="background:var(--cfg-b)"></i>Chương 1 — dùng</span>
+    <span><i style="background:var(--accent)"></i>Chương 2 — dùng</span>
+    <span><i style="background:repeating-linear-gradient(135deg,var(--rule) 0 3px,var(--paper-2) 3px 7px)"></i>Cuối chương: quiz, tóm tắt, tham khảo — loại</span>
+    <span><i style="background:var(--paper-2);border:1px solid var(--rule)"></i>Bìa, mục lục, lời nói đầu — loại</span>
+  </div>
+  <div class="row rule-top" style="margin-top:34px">
+    <dl class="facts grow">${ch}<dt>Quy tắc đếm</dt><dd>Trang PDF vật lý (đếm từ 1) có nội dung chính.</dd></dl>
+    <dl class="facts grow"><dt>Nguồn</dt><dd>${esc(S.publisher)} · ${esc(S.title)}</dd><dt>Giấy phép</dt><dd>CC BY-NC-SA 4.0 — phi thương mại, ghi công, chia sẻ cùng giấy phép</dd><dt>Toàn sách</dt><dd><span class="num">${fmtInt(S.physical_pages_total)}</span> trang PDF · truy cập ${esc(S.accessed_at)}</dd></dl>
+  </div>`;
+      }
+    });
+
+    slides.push({
+      title: "Pipeline", html: () => {
+        const A = LOG.strategy_A, B = LOG.strategy_B, meta = D.run_meta.dev;
+        const steps = [
+          ["Đọc PDF", LOG.content_pages, `trang có text / ${LOG.page_count} · rỗng ${LOG.empty_pages.length} · lỗi ${LOG.error_pages.length}`, "pypdf"],
+          ["Chuẩn hóa", fmtInt(LOG.total_chars), "ký tự sau khi làm sạch", "NFKC · bỏ header/footer · dựng đoạn"],
+          ["Chia chunk", `${A.count} · ${B.count}`, "chunk của A · B", "cố định 500/50 · theo đoạn ≤ 800"],
+          ["Embedding", fmtInt(meta.dimensions), "chiều mỗi vector", esc(meta.model)],
+          ["Lưu & tìm", fmtInt(A.count + B.count), "vector trong pgvector", "cosine, exact search"],
+          ["Đánh giá", `${D.questions.length} × 3`, "câu hỏi × cấu hình", "Hit@1 · Hit@3 · chấm tay"],
+        ];
+        return `<h2>Pipeline từ PDF đến kết quả đo</h2>
+  <p class="lede">Mọi con số dưới đây đọc trực tiếp từ log của lần chạy thật, không gõ tay.</p>
+  <ol class="flow">${steps.map(([s, v, u, t]) => `<li><div class="step">${s}</div><div class="val num">${v}</div><div class="unit">${u}</div><div class="tool">${t}</div></li>`).join("")}</ol>
+  <div class="row" style="margin-top:auto;gap:28px">
+    <div class="callout grow">Embedding cả hai index: <b class="num">${fmtInt(tokensTotal)}</b> token, <b class="num">${costTotal.toFixed(6)}</b> credit OpenRouter. Chạy lại lần 2: <b class="num">${RUN2.strategies.A.embedded + RUN2.strategies.B.embedded}</b> chunk phải embed lại — nạp lại không trùng, không tốn thêm.</div>
+    <div class="callout grow">Câu hỏi có instruction riêng, tài liệu thì không (theo model card Qwen3). Không có index HNSW vì pgvector chỉ index tới 2000 chiều; với ${fmtInt(A.count + B.count)} vector, tìm chính xác mất khoảng <b class="num">${Math.round(meta.search_ms_per_query.B)}</b> ms/câu.</div>
+  </div>`;
+      }
+    });
+
+    slides.push({
+      title: "Chuẩn hóa", html: () => {
+        const footer = [/^\d+\s+\d+ • .+$/, /^\d+\.\d+ • .+\s+\d+$/, /^Access for free at openstax\.org$/];
+        const rawLines = D.sample.raw.split("\n").map((l) => l.replace(/\s+$/, ""));
+        const SHOW = 8;
+        const tail = rawLines.slice(-SHOW);
+        const raw = tail.map((l) => {
+          const t = l.trim();
+          if (footer.some((re) => re.test(t))) return `<span class="drop">${esc(l)}</span>`;
+          return esc(l) + `<span class="join" aria-hidden="true">⏎</span>`;
+        }).join("\n");
+        const paras = D.sample.normalized.split("\n\n");
+        const lastParas = paras.slice(-3).map((p) => `<p>${esc(p)}</p>`).join("");
+        return `<h2>Chuẩn hóa: từ dòng vỡ thành đoạn văn</h2>
+  <p class="lede">pypdf trả về các dòng ngắt cứng, không có dòng trống giữa các đoạn, lẫn cả chân trang. Đây là trang ${D.sample.page}, trước và sau.</p>
+  <div class="row grow" style="min-height:0;gap:28px">
+    <div class="pane grow"><h3>Text thô từ PDF <span class="muted">${rawLines.length} dòng, xem ${SHOW} dòng cuối</span></h3><pre class="rawlines">${raw}</pre></div>
+    <div class="pane grow"><h3>Sau chuẩn hóa <span class="muted">${paras.length} đoạn</span></h3><div class="prose">${lastParas}</div></div>
+  </div>
+  <div class="ops"><span>Bỏ header/footer lặp lại</span><span>Bỏ nhãn hộp viết hoa</span><span>Nối từ có gạch nối</span><span>Dựng đoạn theo độ dài dòng + dấu câu</span><span>Giữ nguyên dấu nháy cong để evidence vẫn khớp</span></div>`;
+      }
+    });
+
+    slides.push({
+      title: "Chunking", html: () => {
+        const coh = csvRows("coherence");
+        const a = coh.find((r) => r.position_id === "pos01" && r.strategy === "A");
+        const b = coh.find((r) => r.position_id === "pos01" && r.strategy === "B");
+        const A = LOG.strategy_A, B = LOG.strategy_B;
+        const ev = LOG.evidence_summary;
+        const cutA = `<span class="cut" aria-label="bị cắt">✂</span>${esc(a.text)}<span class="cut" aria-label="bị cắt">✂</span>`;
+        return `<h2>Hai cách cắt cùng một đoạn văn</h2>
+  <p class="lede">Cùng vị trí giữa trang ${a.page}. A cắt theo số ký tự nên rơi vào giữa chữ; B gom trọn đoạn văn.</p>
+  <div class="row grow" style="min-height:0;gap:28px">
+    <div class="pane grow"><h3><span style="display:flex;gap:12px;align-items:center">${cfgBadge("A")} Cố định 500 ký tự, overlap 50</span><span class="muted num">${a.chunk_chars} ký tự</span></h3><div class="chunk">${cutA}</div></div>
+    <div class="pane grow"><h3><span style="display:flex;gap:12px;align-items:center">${cfgBadge("B")} Theo đoạn, tối đa 800</span><span class="muted num">${b.chunk_chars} ký tự</span></h3><div class="chunk">${esc(b.text)}</div></div>
+  </div>
+  <table class="data" style="margin-top:22px">
+    <thead><tr><th>Cách cắt</th><th class="n">Số chunk</th><th class="n">Ngắn nhất</th><th class="n">Dài nhất</th><th class="n">Trung bình</th><th class="n">Evidence nằm trọn trong 1 chunk</th></tr></thead>
+    <tbody>
+      <tr><td><span class="cfgname">${cfgBadge("A")} Cố định</span></td><td class="n">${A.count}</td><td class="n">${A.min}</td><td class="n">${A.max}</td><td class="n">${fmtDec(A.mean)}</td><td class="n">${ev.single_chunk_A}/${D.questions.length}</td></tr>
+      <tr><td><span class="cfgname">${cfgBadge("B")} Theo đoạn</span></td><td class="n">${B.count}</td><td class="n">${B.min}</td><td class="n">${B.max}</td><td class="n">${fmtDec(B.mean)}</td><td class="n">${ev.single_chunk_B}/${D.questions.length}</td></tr>
+    </tbody></table>`;
+      }
+    });
+
+    slides.push({
+      title: "Ba cấu hình", html: () => {
+        const exp = Object.fromEntries(D.experiment.map((r) => [r.strategy, r]));
+        const CHUNK_VI = (c, e) => c === "A" ? `Cửa sổ <span class="num">${esc(e.chunk_size)}</span> ký tự, chồng <span class="num">${esc(e.overlap)}</span>, trong từng trang` : c === "B" ? `Gom đoạn văn trong trang, tối đa <span class="num">${esc(e.chunk_size.replace(/\D+/g, ""))}</span> ký tự; heading đi kèm đoạn sau` : "Dùng chung chunk và vector với B";
+        const rows = CONFIGS.map((c) => `<tr class="${c === chosen ? "chosen" : ""}"><td><span class="cfgname">${cfgBadge(c)}<b>${CFG_NAME[c]}</b></span></td><td>${CHUNK_VI(c, exp[c])}</td><td>${c === "C" ? "Lọc <code>chapter</code> khi câu hỏi có phạm vi" : "Không lọc"}</td><td class="n">${c === "A" ? LOG.strategy_A.count : LOG.strategy_B.count}</td></tr>`).join("");
+        return `<h2>Ba cấu hình, mỗi cặp đổi một thứ</h2>
+  <p class="lede">Cùng corpus, cùng model embedding, cùng ${D.questions.length} câu hỏi. A→B đổi cách cắt; B→C chỉ thêm bộ lọc metadata, dùng chung vector với B.</p>
+  <table class="data"><thead><tr><th style="width:28%">Cấu hình</th><th>Chunk</th><th style="width:28%">Truy xuất</th><th class="n">Chunk</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="row" style="margin-top:auto;gap:28px">
+    <div class="callout grow"><b>Tiêu chí chọn — chốt trước khi chạy test</b><br>1. Evidence Hit@3 trên dev cao nhất<br>2. Hòa → Hit@1 trên dev<br>3. Hòa → ít chunk, chi phí thấp hơn<br>4. Hòa → filter compliance trên dev <span class="muted">(thêm sau khi xem dev, trước test)</span></div>
+    <div class="callout grow"><b>Metadata mỗi chunk</b><br><code>document_id</code> · <code>source</code> · <code>page</code> · <code>chapter</code> · <code>section</code> · vị trí ký tự<br><br>Trường lọc <code>chapter</code> lấy từ manifest theo khoảng trang — không đoán.</div>
+  </div>`;
+      }
+    });
+
+    slides.push({
+      title: "Benchmark", html: () => {
+        const qs = D.questions;
+        const by = (k) => qs.reduce((m, q) => ((m[q[k]] = (m[q[k]] || 0) + 1), m), {});
+        const types = by("type");
+        const split = by("split");
+        const filt = qs.filter((q) => q.filter);
+        return `<h2>${qs.length} câu hỏi, chia dev/test trước khi chạy</h2>
+  <p class="lede">Mỗi câu có đáp án, trang nguồn và đoạn evidence nguyên văn — đã kiểm bằng script là có thật trên đúng trang, trước và sau chuẩn hóa.</p>
+  <div class="row" style="gap:64px;align-items:flex-start">
+    <div style="width:420px">
+      <div class="row" style="gap:40px;margin-bottom:26px"><div><div class="bignum num">${split.dev}</div><div class="muted">dev — chọn cấu hình</div></div><div><div class="bignum num">${split.test}</div><div class="muted">test — đánh giá sau cùng</div></div></div>
+      <table class="data"><tbody>${Object.entries(types).map(([t, n]) => `<tr><td>${TYPE_VI[t] || esc(t)}</td><td class="n">${n}</td></tr>`).join("")}</tbody></table>
+    </div>
+    <div class="grow">
+      <h3 style="margin-bottom:12px">Câu có lọc: chủ đề xuất hiện ở cả hai chương</h3>
+      <table class="data"><thead><tr><th>Câu</th><th>Hỏi</th><th class="n">Chương đúng</th><th>Chỗ gây nhiễu</th></tr></thead><tbody>
+      ${filt.map((q) => `<tr><td class="num">${q.id}<br><span class="muted small">${q.split}</span></td><td>${esc(q.question)}</td><td class="n">${q.filter.chapter}</td><td class="muted small">${esc((q.filter_note || "").replace(/^.*?also (appears|discussed) in /i, "").replace(/;.*$/, ""))}</td></tr>`).join("")}
+      </tbody></table>
+      <p class="muted small" style="margin-top:12px">Câu hỏi không nhắc tên chương hay số trang; giá trị lọc coi là ngữ cảnh người dùng cung cấp trước.</p>
+    </div>
+  </div>`;
+      }
+    });
+
+    slides.push({
+      title: "Kết quả truy xuất", html: () => {
+        const block = (split, metric, label) => {
+          const rows = CONFIGS.map((c) => {
+            const r = D.summary[split][`${c}/${split}`][metric];
+            const pct = r.N ? (r.n / r.N) * 100 : 0;
+            return `<div class="bar"><span>${cfgBadge(c)}</span><div class="track" role="img" aria-label="${c}: ${r.n} trên ${r.N}"><div class="fill ${c}" style="width:${pct}%"></div></div><span class="v">${r.n}/${r.N}</span></div>`;
+          }).join("");
+          return `<div class="metric"><h3>${label} <span class="muted">${split === "dev" ? "dev" : "test"} · ${D.summary[split]["A/" + split][metric].N} câu</span></h3>${rows}</div>`;
+        };
+        return `<h2>Hit@1 và Evidence Hit@3</h2>
+  <p class="lede">Hit@1: chunk hạng 1 nằm đúng trang và chứa trọn evidence. Hit@3: ít nhất một trong 3 chunk đầu như vậy.</p>
+  <div class="bars">${block("dev", "hit@1", "Hit@1")}${block("dev", "hit@3", "Hit@3")}${block("test", "hit@1", "Hit@1")}${block("test", "hit@3", "Hit@3")}</div>
+  <div class="callout" style="margin-top:auto"><b>Dev bị “trần”:</b> Hit@3 tối đa ở cả ba cấu hình nên không phân biệt được — khác biệt chỉ ở Hit@1. <b>Test thấp hơn hẳn</b>, và lỗi chủ yếu là hạng 1 đúng trang nhưng là chunk bên cạnh, không chứa nguyên văn evidence.</div>`;
+      }
+    });
+
+    slides.push({
+      title: "Chấm tay", html: () => {
+        const coh = csvRows("coherence"), meta = csvRows("metadata"), gr = csvRows("grounding");
+        const avg = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+        const row = (c) => {
+          const cohSrc = c === "C" ? "B" : c;
+          const cs = coh.filter((r) => r.strategy === cohSrc).map((r) => Number(r.coherence_0_2));
+          const ms = meta.filter((r) => r.config === c);
+          const mOk = ms.filter((r) => ["source_ok", "page_ok", "chapter_ok", "section_ok"].every((k) => r[k] === "1")).length;
+          const gs = gr.filter((r) => r.config === c).map((r) => Number(r.grounding_0_2));
+          const dist = [0, 1, 2].map((v) => gs.filter((g) => g === v).length);
+          const fd = D.summary.dev[`${c}/dev`].filter_compliance, ft = D.summary.test[`${c}/test`].filter_compliance;
+          return `<tr class="${c === chosen ? "chosen" : ""}"><td><span class="cfgname">${cfgBadge(c)}${CFG_NAME[c]}</span></td>
+      <td class="n">${cs.length ? fmtDec(avg(cs)) : "—"}${c === "C" ? '<br><span class="muted small">dùng chunk B</span>' : ""}</td>
+      <td class="n">${mOk}/${ms.length}</td><td class="n">${ratio(fd)} · ${ratio(ft)}</td>
+      <td class="n">${dist.join(" / ")}</td><td class="n">${fmtDec(avg(gs))}</td></tr>`;
+        };
+        return `<h2>Năm khía cạnh — phần chấm tay</h2>
+  <p class="lede">Coherence: 10 vị trí chọn trước khi có điểm. Metadata và grounding: 5 câu test × top-3. Grounding đánh giá bằng chứng truy xuất, không phải câu trả lời LLM.</p>
+  <table class="data"><thead><tr><th>Cấu hình</th><th class="n">Coherence /2</th><th class="n">Metadata đủ & đúng</th><th class="n">Lọc đúng chương<br>dev · test</th><th class="n">Grounding<br>số câu 0 / 1 / 2</th><th class="n">Grounding /2</th></tr></thead><tbody>${CONFIGS.map(row).join("")}</tbody></table>
+  <div class="row" style="margin-top:auto;gap:28px">
+    <div class="callout grow"><b>Chunking thắng rõ ở coherence:</b> mọi chunk A đều cắt giữa từ hoặc giữa câu. B mất điểm ở 2 vị trí do heading dính vào đoạn trước.</div>
+    <div class="callout grow"><b>Grounding A cao hơn chỉ nhờ một câu</b> (t01) trên mẫu 5 câu — không đủ để kết luận A tốt hơn. Metadata khớp PDF ở cả 45 bản ghi kiểm tra.</div>
+  </div>`;
+      }
+    });
+
+    const FAILS = [
+      { id: "q15", split: "dev", cfg: "A", title: "Cắt cứng làm mất trọn evidence", text: "Hạng 1 đúng trang 65 nhưng chunk cố định bị cắt ngang câu về “value neutrality”; chunk chứa evidence đứng hạng 2. B và C trúng ngay hạng 1." },
+      { id: "t01", split: "test", cfg: "B", title: "Đoạn văn trả lời không lọt top-3", text: "Top-3 của B chỉ có định nghĩa case study và câu “ít khi dùng làm phương pháp chính”. Câu trả lời “khi trường hợp là duy nhất” bị bỏ lỡ; A lại trúng hạng 1." },
+      { id: "t04", split: "test", cfg: "A", title: "Lẫn chương khác khi không lọc", text: "Hạng 2 của A là đoạn chương 1 về tranh luận lương tối thiểu; chunk trang 59 mất câu nêu tên Ehrenreich và sách Nickel and Dimed." },
+      { id: "t03", split: "test", cfg: "C", title: "Đúng ý nhưng không đúng nguyên văn", text: "Hạng 1 là chú thích hình 1.9 nêu đúng Kenneth và Mamie Clark — trả lời được câu hỏi, nhưng so khớp nguyên văn tính là trượt Hit@1." },
+    ];
+    slides.push({
+      title: "Ví dụ lỗi", html: () => `<h2>Bốn trường hợp đáng xem</h2>
+  <p class="lede">Mỗi trường hợp mở được trong phần tra cứu, với top-3 của cả ba cấu hình đặt cạnh nhau.</p>
+  <div class="fails">${FAILS.map((f) => {
+        const t = TRACE[f.id][f.cfg];
+        const res = t["hit@1"] ? tag("ok", "Hit@1", "ok") : t["hit@3"] ? tag("warn", `Hit@3 · hạng ${t.first_hit_rank}`, "part") : tag("bad", "Trượt top-3", "bad");
+        return `<article class="fail"><span class="id">${f.id}</span><h3 style="display:flex;gap:12px;align-items:center">${cfgBadge(f.cfg)} ${f.title} ${res}</h3><p>${f.text}</p><button class="linkbtn" type="button" data-open="${f.split}:${f.id}">Mở trường hợp ${f.id} ${ICON.go}</button></article>`;
+      }).join("")}</div>`
+    });
+
+    slides.push({
+      title: "Tra cứu từng trường hợp", id: "explore", html: () => `<div class="ex-head"><h2>Tra cứu từng trường hợp</h2>
+    <div class="seg" role="group" aria-label="Tập câu hỏi"><button type="button" data-split="dev">Dev</button><button type="button" data-split="test">Test</button></div>
+    <div class="chips" id="chips" role="group" aria-label="Câu hỏi"></div></div>
+  <div class="qbox" id="qbox" aria-live="polite"></div>
+  <div class="cols" id="cols"></div>
+  <div class="ex-foot"><button class="btn ghost" type="button" id="open-csv">${ICON.table} Xem dòng CSV / trace gốc</button><span><kbd>↑</kbd><kbd>↓</kbd> đổi câu hỏi · chấm màu = Hit@1 / Hit@3 / trượt của A·B·C</span></div>`,
+      after: () => renderExplorer()
+    });
+
+    slides.push({
+      title: "Coherence", id: "coherence", html: () => `<div class="ex-head"><h2>Coherence: 10 vị trí, A cạnh B</h2></div>
+  <p class="lede" style="margin-bottom:16px">Mỗi vị trí là điểm giữa một trang, chọn trước khi có kết quả. Thang 0–2: 0 không hiểu được · 1 hiểu một phần · 2 tự hiểu, giữ trọn ý.</p>
+  <div class="coh"><div class="poslist" id="poslist" role="group" aria-label="Vị trí"></div><div class="col" id="cohA"></div><div class="col" id="cohB"></div></div>`,
+      after: () => renderCoherence()
+    });
+
+    slides.push({
+      title: "Kết luận", html: () => {
+        const sd = D.summary.dev, stt = D.summary.test;
+        return `<h2>Kết luận</h2>
+  <div class="concl" style="margin-top:18px">
+    <div>
+      <p class="verdict">${cfgBadge(chosen)}Chọn C — chunk theo đoạn, lọc theo chương khi người dùng chỉ định phạm vi.</p>
+      <ul>
+        <li>Theo tiêu chí đã chốt: hòa B ở Hit@3 (${ratio(sd["C/dev"]["hit@3"])}) và Hit@1 (${ratio(sd["C/dev"]["hit@1"])}) trên dev; lọc đúng chương ${ratio(sd["C/dev"].filter_compliance)} so với ${ratio(sd["B/dev"].filter_compliance)}.</li>
+        <li>Theo đoạn giữ trọn ý và ít chunk hơn (${LOG.strategy_B.count} so với ${LOG.strategy_A.count}).</li>
+        <li>Lọc chỉ đổi <b>phạm vi</b> top-3, không đổi Hit — có ích khi khái niệm lặp lại giữa các chương.</li>
+        <li>Trên test cả ba bằng nhau: Hit@1 ${ratio(stt["C/test"]["hit@1"])}, Hit@3 ${ratio(stt["C/test"]["hit@3"])}.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-bottom:14px">Giới hạn</h3>
+      <ul>
+        <li>Test chỉ ${stt["C/test"]["hit@1"].N} câu: lệch một câu là ${Math.round(100 / stt["C/test"]["hit@1"].N)} điểm phần trăm.</li>
+        <li>Câu hỏi bám sát câu văn gốc nên dev bị trần.</li>
+        <li>So khớp nguyên văn bỏ sót bằng chứng tương đương (t03).</li>
+        <li>Chunk không vượt ranh giới trang; bảng biểu bị vỡ khi trích.</li>
+        <li>Nhãn chấm tay có một người chấm, cũng là tác giả.</li>
+      </ul>
+    </div>
+  </div>`;
+      }
+    });
+
+    /* ---------- explorer ---------- */
+    const state = { slide: 0, split: "dev", q: null, pos: "pos01" };
+    const idsOf = (split) => D.questions.filter((q) => q.split === split).map((q) => q.id);
+
+    function hitIcon(h) {
+      if (h.evidence_full) return tag("ok", "Chứa evidence", "ok");
+      if (h.evidence_partial) return tag("warn", "Một phần evidence", "part");
+      if (h.gold_page_match) return tag("neutral", "Đúng trang, thiếu evidence");
+      return tag("bad", "Sai trang", "bad");
+    }
+
+    function renderExplorer() {
+      const ids = idsOf(state.split);
+      if (!ids.includes(state.q)) state.q = ids[0];
+      document.querySelectorAll("[data-split]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.split === state.split)));
+      document.getElementById("chips").innerHTML = ids.map((id) => {
+        const dots = CONFIGS.map((c) => {
+          const t = TRACE[id][c];
+          return `<i class="${t["hit@1"] ? "h1" : t["hit@3"] ? "h3" : "miss"}"></i>`;
+        }).join("");
+        const label = CONFIGS.map((c) => `${c} ${TRACE[id][c]["hit@1"] ? "Hit@1" : TRACE[id][c]["hit@3"] ? "Hit@3" : "trượt"}`).join(", ");
+        return `<button type="button" data-q="${id}" aria-pressed="${id === state.q}" aria-label="${id}: ${label}">${id}<span class="dots" aria-hidden="true">${dots}</span></button>`;
+      }).join("");
+      const q = Q[state.q];
+      const pages = q.gold_page.map((p) => `trang ${p} · chương ${chapterOf(p)}`).join(", ");
+      document.getElementById("qbox").innerHTML = `<div><p class="q">${esc(q.question)}</p>
+    <div class="meta"><span class="num">${q.id}</span><span>${TYPE_VI[q.type] || esc(q.type)}</span><span>Gold: ${pages}</span>${q.filter ? `<span>Lọc: chương ${q.filter.chapter}</span>` : "<span>Không lọc</span>"}</div></div>
+    <div><p class="ev"><b>Đáp án:</b> ${esc(q.expected_answer)}</p><p class="ev" style="margin-top:6px"><b>Evidence:</b> <mark>${esc(q.evidence_quote)}</mark></p></div>`;
+      const gr = state.split === "test" ? csvRows("grounding") : [];
+      document.getElementById("cols").innerHTML = CONFIGS.map((c) => {
+        const t = TRACE[state.q][c];
+        const g = gr.find((r) => r.question_id === state.q && r.config === c);
+        const res = t["hit@1"] ? tag("ok", "Hit@1", "ok") : t["hit@3"] ? tag("warn", `Hit@3 · hạng ${t.first_hit_rank}`, "part") : tag("bad", "Trượt top-3", "bad");
+        const filt = t.filter_applied ? tag("neutral", `lọc ch.${t.filter_applied.chapter}`) : "";
+        const ground = g ? tag(g.grounding_0_2 === "2" ? "ok" : g.grounding_0_2 === "1" ? "warn" : "bad", `Grounding ${g.grounding_0_2}/2`) : "";
+        const hits = t.top_k.map((h) => `<div class="hit"><div class="hit-h"><span class="rank">#${h.rank}</span><span class="num">trang ${h.page} · ch.${h.chapter} · §${esc(h.section)}</span><span class="num">score ${h.score.toFixed(3)}</span>${hitIcon(h)}</div>
+      <div class="hit-t">${h.gold_page_match ? highlight(h.text, q.evidence_quote) : esc(h.text)}</div></div>`).join("");
+        return `<section class="col" aria-label="Cấu hình ${c}"><div class="col-h">${cfgBadge(c)}<span class="name">${CFG_NAME[c]}</span>${res}${filt}${ground}</div>
+      ${g ? `<p class="reason" style="border-top:0;border-bottom:1px solid var(--rule);padding:10px 14px;font-size:.9375rem">${esc(g.reason)}</p>` : ""}<div class="col-b" tabindex="0">${hits}</div></section>`;
+      }).join("");
+      document.getElementById("live").textContent = `${state.q}: ${q.question}`;
+    }
+
+    function renderCoherence() {
+      const coh = csvRows("coherence");
+      const positions = [...new Set(coh.map((r) => r.position_id))];
+      document.getElementById("poslist").innerHTML = positions.map((p) => {
+        const a = coh.find((r) => r.position_id === p && r.strategy === "A"), b = coh.find((r) => r.position_id === p && r.strategy === "B");
+        return `<button type="button" data-pos="${p}" aria-pressed="${p === state.pos}"><span>${p} <span class="muted">· tr.${a.page}</span></span><span class="scores">${a.coherence_0_2}·${b.coherence_0_2}</span></button>`;
+      }).join("");
+      for (const c of ["A", "B"]) {
+        const r = coh.find((x) => x.position_id === state.pos && x.strategy === c);
+        document.getElementById("coh" + c).innerHTML = `<div class="col-h">${cfgBadge(c)}<span class="name">${CFG_NAME[c]} · <span class="num">${r.chunk_chars}</span> ký tự</span><span class="score num">${r.coherence_0_2}</span><span class="muted">/2</span></div>
+      <div class="col-b" tabindex="0"><div class="chunk" style="font-size:1.0625rem;padding-top:10px">${esc(r.text)}</div></div><p class="reason">${esc(r.reason)}</p>`;
+      }
+    }
+
+    /* Raw rows sheet */
+    const sheet = document.getElementById("sheet");
+    function csvTable(name, rows) {
+      const { header } = D.audits[name];
+      if (!rows.length) return `<div class="empty">Không có dòng nào trong <code>audit_${name}.csv</code> cho câu này — nhãn thủ công chỉ chấm cho 5 câu test.</div>`;
+      const long = new Set(["text", "text_excerpt", "top1_text", "top2_text", "top3_text", "reason", "question"]);
+      return `<table class="csv"><thead><tr>${header.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${header.map((h, i) => `<td class="${long.has(h) ? "long" : ""}">${esc(r[i])}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    }
+    function openSheet() {
+      const q = state.q;
+      const pick = (name, key) => { const { header, rows } = D.audits[name]; const i = header.indexOf(key); return rows.filter((r) => r[i] === q); };
+      const trace = CONFIGS.map((c) => { const t = { ...TRACE[q][c] }; t.top_k = t.top_k.map((h) => ({ ...h, text: h.text.slice(0, 120) + "…" })); return t; });
+      sheet.innerHTML = `<div class="sheet-h"><h3 id="sheet-title">Dữ liệu gốc · <span class="num">${q}</span></h3><button class="btn ghost" type="button" id="close-sheet">${ICON.close} Đóng <kbd>Esc</kbd></button></div>
+    <div class="sheet-b"><h4>starter/results/audit_grounding.csv</h4>${csvTable("grounding", pick("grounding", "question_id"))}
+    <h4>starter/results/audit_metadata.csv</h4>${csvTable("metadata", pick("metadata", "question_id"))}
+    <h4>starter/results/traces_${state.split}.jsonl <span class="muted">(text rút gọn)</span></h4><pre class="rawlines" style="font-size:.8125rem">${esc(trace.map((t) => JSON.stringify(t)).join("\n"))}</pre></div>`;
+      sheet.hidden = false; sheet.classList.add("is-open");
+      document.getElementById("close-sheet").focus();
+    }
+    function closeSheet() {
+      if (sheet.hidden) return;
+      sheet.classList.remove("is-open"); sheet.hidden = true;
+      document.getElementById("open-csv")?.focus();
+    }
+
+    /* ---------- navigation ---------- */
+    const slidesEl = document.getElementById("slides");
+    slidesEl.innerHTML = slides.map((s, i) => `<section class="slide ${s.cls || ""}" id="slide-${i}" aria-roledescription="slide" aria-label="${i + 1} / ${slides.length}: ${esc(s.title)}"></section>`).join("");
+    document.getElementById("credit").innerHTML = `Nội dung trích: <i>${esc(S.title)}</i>, OpenStax, <a href="${esc(S.source_path_or_url)}">CC BY-NC-SA 4.0</a> · dữ liệu build ${esc(D.built_at.slice(0, 10))}`;
+
+    function go(i, { focus = false } = {}) {
+      i = Math.max(0, Math.min(slides.length - 1, i));
+      closeSheet();
+      const prev = slidesEl.querySelector(".slide.is-active");
+      if (prev) { prev.classList.remove("is-active"); prev.innerHTML = ""; }
+      const el = document.getElementById("slide-" + i);
+      el.innerHTML = slides[i].html();
+      el.classList.add("is-active");
+      slides[i].after?.();
+      state.slide = i;
+      document.getElementById("counter").textContent = `${i + 1} / ${slides.length}`;
+      document.getElementById("progress").style.transform = `scaleX(${(i + 1) / slides.length})`;
+      document.getElementById("prev").disabled = i === 0;
+      document.getElementById("next").disabled = i === slides.length - 1;
+      document.getElementById("live").textContent = `Slide ${i + 1} / ${slides.length}: ${slides[i].title}`;
+      const hash = slides[i].id === "explore" ? `#${i + 1}/${state.split}/${state.q || ""}` : `#${i + 1}`;
+      history.replaceState(null, "", hash);
+      if (focus) document.getElementById("stage").focus({ preventScroll: true });
+    }
+    const exploreIndex = slides.findIndex((s) => s.id === "explore");
+    function openCase(split, id) { state.split = split; state.q = id; go(exploreIndex); }
+
+    document.getElementById("prev").addEventListener("click", () => go(state.slide - 1));
+    document.getElementById("next").addEventListener("click", () => go(state.slide + 1));
+    document.getElementById("fs").addEventListener("click", toggleFs);
+    function toggleFs() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+
+    slidesEl.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.open) { const [s, id] = b.dataset.open.split(":"); openCase(s, id); }
+      else if (b.dataset.split) { state.split = b.dataset.split; state.q = null; renderExplorer(); go(state.slide); }
+      else if (b.dataset.q) { state.q = b.dataset.q; renderExplorer(); history.replaceState(null, "", `#${state.slide + 1}/${state.split}/${state.q}`); }
+      else if (b.dataset.pos) { state.pos = b.dataset.pos; renderCoherence(); }
+      else if (b.id === "open-csv") openSheet();
+    });
+    sheet.addEventListener("click", (e) => { if (e.target.closest("#close-sheet")) closeSheet(); });
+
+    function step(delta) {
+      if (slides[state.slide].id === "explore") {
+        const ids = idsOf(state.split); const i = ids.indexOf(state.q);
+        state.q = ids[(i + delta + ids.length) % ids.length]; renderExplorer();
+        history.replaceState(null, "", `#${state.slide + 1}/${state.split}/${state.q}`);
+      } else if (slides[state.slide].id === "coherence") {
+        const ps = [...new Set(csvRows("coherence").map((r) => r.position_id))]; const i = ps.indexOf(state.pos);
+        state.pos = ps[(i + delta + ps.length) % ps.length]; renderCoherence();
+      }
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "Escape") { closeSheet(); return; }
+      if (!sheet.hidden) return;
+      switch (e.key) {
+        case "ArrowRight": case "PageDown": case " ": e.preventDefault(); go(state.slide + 1); break;
+        case "ArrowLeft": case "PageUp": e.preventDefault(); go(state.slide - 1); break;
+        case "ArrowDown": e.preventDefault(); step(1); break;
+        case "ArrowUp": e.preventDefault(); step(-1); break;
+        case "Home": go(0); break;
+        case "End": go(slides.length - 1); break;
+        case "f": case "F": toggleFs(); break;
+      }
+    });
+
+    /* Fit 1600x900 stage into the viewport */
+    function fit() { document.querySelector(".stage").style.setProperty("--k", Math.min(innerWidth / 1600, innerHeight / 900)); }
+    addEventListener("resize", fit); fit();
+
+    /* Deep link: #n or #n/split/qid */
+    const m = location.hash.match(/^#(\d+)(?:\/(dev|test)\/(\w+))?/);
+    if (m && m[2] && Q[m[3]]) { state.split = m[2]; state.q = m[3]; }
+    go(m ? Number(m[1]) - 1 : 0);
+  </script>
+</body>
+
+</html>

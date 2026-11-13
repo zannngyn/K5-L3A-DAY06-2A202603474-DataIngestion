@@ -1,0 +1,106 @@
+{
+    "page_counting_rule": "Count PDF pages (1-based physical index) with relevant body content; exclude cover, TOC, preface, blank pages, end-of-chapter Key Terms/Section Summary/Section Quiz/Short Answer/Further Research/References.",
+    "char_count_method": "Raw pypdf 6.x extract_text() length per page before normalization; to be recomputed by the pipeline after normalization.",
+    "sources": [
+        {
+            "source_id": "openstax-intro-sociology-3e",
+            "title": "Introduction to Sociology 3e",
+            "publisher": "OpenStax",
+            "source_path_or_url": "https://openstax.org/details/books/introduction-sociology-3e",
+            "local_path": "data/introduction-sociology-3e_pages-1-76.pdf",
+            "local_file_note": "Excerpt of the official OpenStax PDF (introduction-sociology-3e_-_WEB.pdf, 664 pages): physical pages 1-76 kept in place, so page numbers are identical to the full PDF. Internal link annotations removed; page content unchanged (extracted text verified identical on all 76 pages). Includes the copyright/license page (p.4).",
+            "license_or_permission": "CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/)",
+            "attribution": "Introduction to Sociology 3e, OpenStax, CC BY-NC-SA 4.0",
+            "accessed_at": "2026-11-13",
+            "version": "3e",
+            "physical_pages_total": 664,
+            "selected_scope": [
+                {
+                    "chapter": 1,
+                    "title": "An Introduction to Sociology",
+                    "pdf_pages": [
+                        19,
+                        20,
+                        21,
+                        22,
+                        23,
+                        24,
+                        25,
+                        26,
+                        27,
+                        28,
+                        29,
+                        30,
+                        31,
+                        32,
+                        33,
+                        34,
+                        35,
+                        36,
+                        37
+                    ],
+                    "page_count": 19,
+                    "char_count": 63679
+                },
+                {
+                    "chapter": 2,
+                    "title": "Sociological Research",
+                    "pdf_pages": [
+                        47,
+                        48,
+                        49,
+                        50,
+                        51,
+                        52,
+                        53,
+                        54,
+                        55,
+                        56,
+                        57,
+                        58,
+                        59,
+                        60,
+                        61,
+                        62,
+                        63,
+                        64,
+                        65,
+                        66,
+                        67
+                    ],
+                    "page_count": 21,
+                    "char_count": 60719
+                }
+            ],
+            "excluded_pages": [
+                {
+                    "reason": "cover, front matter, TOC, preface",
+                    "pdf_pages": "1-18"
+                },
+                {
+                    "reason": "chapter 1 end matter (key terms, summary, quiz, short answer, further research, references)",
+                    "pdf_pages": "38-46"
+                },
+                {
+                    "reason": "chapter 2 end matter (key terms, summary, quiz, short answer, further research, references)",
+                    "pdf_pages": "68-76"
+                }
+            ],
+            "counted_content_pages": 40,
+            "char_count": 124398,
+            "normalized_char_count": 121063,
+            "chunking_strategy": "by_paragraph (per page; heading kept with next paragraph)",
+            "chunk_size": 800,
+            "overlap": 0,
+            "metadata": "document_id, source, page, chapter, section",
+            "filter": "chapter (only for questions with filter)",
+            "vectorizer": "openrouter qwen/qwen3-embedding-8b (4096d)",
+            "hypothesis": "chunk theo đoạn giữ trọn ý nên Hit@1 cao hơn A",
+            "dev_hit1": 14,
+            "dev_hit3": 15,
+            "test_hit1": 2,
+            "test_hit3": 4,
+            "notes": "Same criterion as A. B vs C differs only by the metadata filter."
+        }
+    ]
+}
