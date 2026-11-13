@@ -1,0 +1,62 @@
+{
+  "A/dev": {
+    "config": "A",
+    "split": "dev",
+    "hit@1": {
+      "n": 13,
+      "N": 15,
+      "pct": 86.7
+    },
+    "hit@3": {
+      "n": 15,
+      "N": 15,
+      "pct": 100.0
+    },
+    "filter_compliance": {
+      "n": 0,
+      "N": 2,
+      "pct": 0.0
+    },
+    "failures": {}
+  },
+  "B/dev": {
+    "config": "B",
+    "split": "dev",
+    "hit@1": {
+      "n": 14,
+      "N": 15,
+      "pct": 93.3
+    },
+    "hit@3": {
+      "n": 15,
+      "N": 15,
+      "pct": 100.0
+    },
+    "filter_compliance": {
+      "n": 0,
+      "N": 2,
+      "pct": 0.0
+    },
+    "failures": {}
+  },
+  "C/dev": {
+    "config": "C",
+    "split": "dev",
+    "hit@1": {
+      "n": 14,
+      "N": 15,
+      "pct": 93.3
+    },
+    "hit@3": {
+      "n": 15,
+      "N": 15,
+      "pct": 100.0
+    },
+    "filter_compliance": {
+      "n": 2,
+      "N": 2,
+      "pct": 100.0
+    },
+    "failures": {}
+  }
+}

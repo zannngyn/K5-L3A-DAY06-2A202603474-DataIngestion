@@ -1,4 +1,4 @@
 strategy,chunking,chunk_size,overlap,metadata,filter,vectorizer,hypothesis,dev_hit1,dev_hit3,test_hit1,test_hit3,notes
-A,,,,,,,,,,,,
-B,,,,,,,,,,,,
-C,,,,,,,,,,,,
+A,fixed_size (char windows per page),500,50,"document_id, source, page, chapter, section",none,openrouter qwen/qwen3-embedding-8b (4096d),,13/15,15/15,2/5,4/5,"Selection criterion fixed 2026-11-13 before any test run: highest dev Evidence Hit@3; tie -> highest dev Hit@1; tie -> fewer chunks / lower cost. Tie-break step 4 added 2026-11-13 after dev, before test: higher dev filter compliance. Chosen: C (dev filter compliance 2/2 vs B 0/2)."
+B,by_paragraph (per page; heading kept with next paragraph),800 max,0,"document_id, source, page, chapter, section",none,openrouter qwen/qwen3-embedding-8b (4096d),chunk theo đoạn giữ trọn ý nên Hit@1 cao hơn A,14/15,15/15,2/5,4/5,Same criterion as A.
+C,same chunks/vectors as B,800 max,0,"document_id, source, page, chapter, section",chapter (only for questions with filter),openrouter qwen/qwen3-embedding-8b (4096d),filter loại chunk chương khác ở câu có phạm vi,14/15,15/15,2/5,4/5,Same criterion as A. B vs C differs only by the metadata filter.
